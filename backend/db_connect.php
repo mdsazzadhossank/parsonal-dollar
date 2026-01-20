@@ -25,7 +25,8 @@ $dbname = "dollar_tracker"; // আপনার ডাটাবেজের ন�
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+// ১. প্রথমে ডাটাবেজ ছাড়াই কানেক্ট করার চেষ্টা
+$conn = new mysqli($servername, $username, $password);
 
 if ($conn->connect_error) {
     http_response_code(500);
@@ -33,6 +34,44 @@ if ($conn->connect_error) {
     exit();
 }
 
-// বাংলা লেখা সঠিকভাবে সেভ হওয়ার জন্য
+// ২. ডাটাবেজ না থাকলে তৈরি করা
+$sql = "CREATE DATABASE IF NOT EXISTS $dbname CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+if (!$conn->query($sql)) {
+    echo json_encode(["status" => "error", "message" => "Error creating database: " . $conn->error]);
+    exit();
+}
+
+// ৩. ডাটাবেজ সিলেক্ট করা
+$conn->select_db($dbname);
 $conn->set_charset("utf8mb4");
+
+// ৪. টেবিলগুলো না থাকলে তৈরি করা
+$transactionsTable = "CREATE TABLE IF NOT EXISTS transactions (
+    id VARCHAR(50) PRIMARY KEY,
+    type VARCHAR(10),
+    amountUSD DECIMAL(10,2),
+    exchangeRate DECIMAL(10,2),
+    extraFees DECIMAL(10,2),
+    totalBDT DECIMAL(15,2),
+    date VARCHAR(50),
+    timestamp BIGINT
+)";
+
+$accountsTable = "CREATE TABLE IF NOT EXISTS accounts (
+    id VARCHAR(50) PRIMARY KEY,
+    username VARCHAR(100),
+    email VARCHAR(100),
+    phone VARCHAR(20),
+    password VARCHAR(255)
+)";
+
+if (!$conn->query($transactionsTable)) {
+    echo json_encode(["status" => "error", "message" => "Error creating transactions table: " . $conn->error]);
+    exit();
+}
+
+if (!$conn->query($accountsTable)) {
+    echo json_encode(["status" => "error", "message" => "Error creating accounts table: " . $conn->error]);
+    exit();
+}
 ?>
