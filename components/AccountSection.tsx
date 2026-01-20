@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, Lock, Save, Eye, EyeOff, Trash2, Plus, Users, Copy, Loader2 } from 'lucide-react';
 import { API_BASE_URL } from '../api_config';
+import { generateUUID } from '../utils';
 
 interface Account {
   id: string;
@@ -51,7 +52,7 @@ export const AccountSection: React.FC = () => {
     }
 
     const newAccount: Account = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         username,
         email,
         phone,

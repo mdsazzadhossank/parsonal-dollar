@@ -6,7 +6,7 @@ import { HistoryList } from './components/HistoryList';
 import { AIModal } from './components/AIModal';
 import { AccountSection } from './components/AccountSection';
 import { Transaction, PortfolioStats } from './types';
-import { calculateStats, formatCurrency } from './utils';
+import { calculateStats, formatCurrency, generateUUID } from './utils';
 import { API_BASE_URL } from './api_config';
 
 const App: React.FC = () => {
@@ -57,7 +57,7 @@ const App: React.FC = () => {
   const handleAddTransaction = async (txData: Omit<Transaction, 'id' | 'timestamp' | 'date'>) => {
     const newTx: Transaction = {
       ...txData,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       timestamp: Date.now(),
       date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
     };
