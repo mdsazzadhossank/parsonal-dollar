@@ -1,3 +1,8 @@
-// আপনার হোস্টিংয়ে যেখানে PHP ফাইলগুলো রাখবেন, সেই ফোল্ডারের লিংক এখানে দিন।
-// উদাহরণ: 'https://yourdomain.com/api' অথবা লোকালহোস্টের জন্য 'http://localhost/dollar-tracker/backend'
-export const API_BASE_URL = 'http://localhost/dollar-tracker/backend';
+// ডাইনামিক API কনফিগারেশন
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+// লোকালহোস্টে থাকলে পুরো পাথ, আর লাইভ সার্ভারে থাকলে রিলেটিভ পাথ ব্যবহার করবে
+// লাইভ সার্ভারে 'backend' ফোল্ডারটি আপনার index.html এর পাশেই আপলোড করবেন
+export const API_BASE_URL = isLocal 
+  ? 'http://localhost/dollar-tracker/backend' 
+  : './backend'; 
