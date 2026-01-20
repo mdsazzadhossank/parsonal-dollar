@@ -173,9 +173,9 @@ const App: React.FC = () => {
           <StatCard 
             label="USD Inventory"
             value={formatCurrency(stats.usdInventory, 'USD')}
-            subtext="Current dollars on hand"
-            icon={<DollarSign size={24} className="text-blue-500" />}
-            valueColor="text-gray-900"
+            subtext={stats.usdInventory < 0 ? "Negative Balance (Debt)" : "Current dollars on hand"}
+            icon={<DollarSign size={24} className={stats.usdInventory < 0 ? "text-red-500" : "text-blue-500"} />}
+            valueColor={stats.usdInventory < 0 ? "text-red-600" : "text-gray-900"}
           />
           <StatCard 
             label="Avg Buy Cost"

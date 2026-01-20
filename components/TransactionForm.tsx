@@ -38,8 +38,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransacti
 
     if (!amount || !r) return;
 
-    if ((type === 'SELL' || type === 'PERSONAL') && amount > currentInventory) {
-      alert(`Cannot ${type === 'PERSONAL' ? 'use' : 'sell'} $${amount}. You only have $${currentInventory} in inventory.`);
+    // Validation: Only prevent SELL if inventory is low. 
+    // PERSONAL use is allowed to go negative (showing debt/usage beyond stock).
+    if (type === 'SELL' && amount > currentInventory) {
+      alert(`Cannot sell $${amount}. You only have $${currentInventory} in inventory.`);
       return;
     }
 
