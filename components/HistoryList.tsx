@@ -51,6 +51,30 @@ export const HistoryList: React.FC<HistoryListProps> = ({ transactions, onDelete
       }
   };
 
+  const renderProfitLabel = (tx: Transaction) => {
+      const profit = profits[tx.id];
+      if (profit === undefined) return null;
+
+      const isPositive = profit >= 0;
+      
+      let label = '';
+      if (isPositive) {
+          label = tx.type === 'PERSONAL' ? 'Saved: +' : 'Profit: +';
+      } else {
+          // For Personal Use, a negative profit is actually an "Expense" or "Cost"
+          label = tx.type === 'PERSONAL' ? 'Expense: ' : 'Loss: ';
+      }
+
+      return (
+        <div className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-block ${
+          isPositive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+        }`}>
+          {label}
+          {Math.abs(profit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ৳
+        </div>
+      );
+  };
+
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full min-h-[400px]">
       <h2 className="text-lg font-bold text-gray-800 mb-6">Recent History</h2>
@@ -78,15 +102,8 @@ export const HistoryList: React.FC<HistoryListProps> = ({ transactions, onDelete
                 @ {tx.exchangeRate} BDT
               </p>
               
-              {/* Profit Display for Sell and Personal Transactions */}
-              {(tx.type === 'SELL' || tx.type === 'PERSONAL') && profits[tx.id] !== undefined && (
-                <div className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-block ${
-                  profits[tx.id] >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                }`}>
-                  {profits[tx.id] >= 0 ? (tx.type === 'PERSONAL' ? 'Saved: +' : 'Profit: +') : 'Loss: '}
-                  {Math.abs(profits[tx.id]).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ৳
-                </div>
-              )}
+              {/* Profit/Loss/Expense Display */}
+              {(tx.type === 'SELL' || tx.type === 'PERSONAL') && renderProfitLabel(tx)}
             </div>
             
             <button 

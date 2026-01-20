@@ -15,53 +15,61 @@ export const calculatePortfolioAnalytics = (transactions: Transaction[]) => {
       inventory += tx.amountUSD;
       // Add cost (including fees) to cost basis
       totalCostBasis += tx.totalBDT;
-    } else if (tx.type === 'SELL' || tx.type === 'PERSONAL') {
-      
-      // Calculate Average Cost Per Unit based on AVAILABLE positive inventory
-      let avgCostPerUnit = 0;
+    } else if (tx.type === 'SELL') {
+      let txProfit = 0;
       if (inventory > 0) {
-        avgCostPerUnit = totalCostBasis / inventory;
-      }
-      
-      // Determine how much of the transaction can be "covered" by existing stock for cost calculation
-      // If we have 0 stock, cost is 0 (pure savings/profit visually, or debt creation)
-      const effectiveInventory = Math.max(0, inventory);
-      const coveredAmount = Math.min(effectiveInventory, tx.amountUSD);
-      
-      // Cost of the goods being sold/used
-      const costOfSoldGoods = avgCostPerUnit * coveredAmount;
+        // Calculate the average cost per unit at the moment of sale
+        const avgCostPerUnit = totalCostBasis / inventory;
+        
+        // Cost of the goods being sold
+        const costOfSoldGoods = avgCostPerUnit * tx.amountUSD;
 
-      // Revenue from sale OR Value consumed (Net amount)
-      const revenue = tx.totalBDT; 
+        // Revenue from sale
+        const revenue = tx.totalBDT; 
 
-      // Profit = Revenue - Cost of Goods Sold
-      const txProfit = revenue - costOfSoldGoods;
-      
-      realizedProfit += txProfit;
-      profits[tx.id] = parseFloat(txProfit.toFixed(2));
+        // Profit = Revenue - Cost of Goods Sold
+        txProfit = revenue - costOfSoldGoods;
+        
+        realizedProfit += txProfit;
 
-      // Update Inventory Logic
-      if (tx.type === 'PERSONAL') {
-        // Personal use ALWAYS subtracts, allowing negative balance
+        // Reduce inventory and cost basis proportionally
         inventory -= tx.amountUSD;
-        // Reduce cost basis only by the amount we actually had cover for
         totalCostBasis -= costOfSoldGoods;
       } else {
-        // SELL Logic (Standard)
-        if (inventory > 0) {
-          inventory -= tx.amountUSD;
-          totalCostBasis -= costOfSoldGoods;
-        }
+        // Edge case: Selling without inventory (Short selling or error correction)
+        txProfit = tx.totalBDT; // Treat whole amount as profit if no cost basis
+        realizedProfit += txProfit;
       }
+      profits[tx.id] = parseFloat(txProfit.toFixed(2));
+    } else if (tx.type === 'PERSONAL') {
+      let txProfit = 0;
+      if (inventory > 0) {
+        const avgCostPerUnit = totalCostBasis / inventory;
+        const costOfSoldGoods = avgCostPerUnit * tx.amountUSD;
+
+        // For PERSONAL use:
+        // Revenue is 0 (money leaves the trading pot).
+        // The "Loss" is exactly the Cost of the Goods consumed + any Extra Fees paid.
+        // This calculates exactly how much capital was "spent" from the portfolio.
+        txProfit = -costOfSoldGoods - tx.extraFees;
+
+        realizedProfit += txProfit;
+
+        // Reduce inventory and cost basis
+        inventory -= tx.amountUSD;
+        totalCostBasis -= costOfSoldGoods;
+      } else {
+        // Edge case: Personal use without inventory
+        // Assuming current transaction market value as the loss
+        txProfit = -tx.totalBDT;
+        realizedProfit += txProfit;
+      }
+      profits[tx.id] = parseFloat(txProfit.toFixed(2));
     }
   }
 
-  // Handle floating point errors for inventory
-  // If slightly negative due to float (e.g. -0.0000001), fix to 0, but if truly negative (personal use), keep it.
-  // We use a small epsilon for zero check, but let big negatives stay.
-  if (Math.abs(inventory) < 0.001) inventory = 0;
-  else inventory = parseFloat(inventory.toFixed(2));
-
+  // Handle floating point errors
+  inventory = Math.max(0, parseFloat(inventory.toFixed(2)));
   totalCostBasis = Math.max(0, parseFloat(totalCostBasis.toFixed(2)));
   
   const avgBuyCost = inventory > 0 ? totalCostBasis / inventory : 0;

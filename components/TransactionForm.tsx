@@ -38,10 +38,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransacti
 
     if (!amount || !r) return;
 
-    // Validation: Only prevent SELL if inventory is low. 
-    // PERSONAL use is allowed to go negative (showing debt/usage beyond stock).
-    if (type === 'SELL' && amount > currentInventory) {
-      alert(`Cannot sell $${amount}. You only have $${currentInventory} in inventory.`);
+    if ((type === 'SELL' || type === 'PERSONAL') && amount > currentInventory) {
+      alert(`Cannot ${type === 'PERSONAL' ? 'use' : 'sell'} $${amount}. You only have $${currentInventory} in inventory.`);
       return;
     }
 
@@ -122,7 +120,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransacti
 
         <div>
           <label className="block text-xs font-semibold text-gray-500 mb-1.5">
-             {type === 'PERSONAL' ? 'Current Market Rate (BDT/USD)' : 'Exchange Rate (BDT/USD)'}
+             {type === 'PERSONAL' ? 'Current Market Rate (Ref only)' : 'Exchange Rate (BDT/USD)'}
           </label>
           <input
             type="number"
@@ -149,7 +147,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransacti
 
         <div className="flex justify-between items-center py-2 border-t border-gray-100 mt-2">
           <span className="text-sm text-gray-500">
-            {type === 'BUY' ? 'Total Cost:' : type === 'SELL' ? 'Net Receive:' : 'Value Consumed:'}
+            {type === 'BUY' ? 'Total Cost:' : type === 'SELL' ? 'Net Receive:' : 'Est. Market Value:'}
           </span>
           <span className="text-lg font-bold text-gray-900">
             {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'BDT' }).format(calculatedTotal)}
