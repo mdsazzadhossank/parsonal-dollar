@@ -1,0 +1,5 @@
+{
+  "name": "Dollar Trade Tracker",
+  "description": "A comprehensive dashboard to track USD/BDT trading, calculate average buy costs, realized profits, and receive AI-powered financial insights in Bengali.",
+  "requestFramePermissions": []
+}
