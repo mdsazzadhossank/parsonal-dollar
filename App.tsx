@@ -6,7 +6,7 @@ import { HistoryList } from './components/HistoryList';
 import { AIModal } from './components/AIModal';
 import { AccountSection } from './components/AccountSection';
 import { Transaction, PortfolioStats } from './types';
-import { calculateStats, formatCurrency, generateUUID } from './utils';
+import { calculatePortfolioAnalytics, formatCurrency, generateUUID } from './utils';
 import { API_BASE_URL } from './api_config';
 
 const App: React.FC = () => {
@@ -20,6 +20,9 @@ const App: React.FC = () => {
     avgBuyCost: 0,
     portfolioValueCost: 0
   });
+
+  // Store individual transaction profits
+  const [profits, setProfits] = useState<Record<string, number>>({});
 
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
@@ -50,8 +53,9 @@ const App: React.FC = () => {
 
   // Recalculate stats whenever transactions change
   useEffect(() => {
-    const newStats = calculateStats(transactions);
+    const { stats: newStats, profits: newProfits } = calculatePortfolioAnalytics(transactions);
     setStats(newStats);
+    setProfits(newProfits);
   }, [transactions]);
 
   const handleAddTransaction = async (txData: Omit<Transaction, 'id' | 'timestamp' | 'date'>) => {
@@ -204,6 +208,7 @@ const App: React.FC = () => {
             <HistoryList 
               transactions={transactions} 
               onDelete={handleDeleteTransaction}
+              profits={profits}
             />
           </div>
         </div>

@@ -5,9 +5,10 @@ import { Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 interface HistoryListProps {
   transactions: Transaction[];
   onDelete: (id: string) => void;
+  profits?: Record<string, number>; // Optional to be safe, but usually provided
 }
 
-export const HistoryList: React.FC<HistoryListProps> = ({ transactions, onDelete }) => {
+export const HistoryList: React.FC<HistoryListProps> = ({ transactions, onDelete, profits = {} }) => {
   if (transactions.length === 0) {
     return (
       <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 h-full min-h-[400px] flex flex-col items-center justify-center text-center">
@@ -48,9 +49,18 @@ export const HistoryList: React.FC<HistoryListProps> = ({ transactions, onDelete
               <p className={`font-bold ${tx.type === 'BUY' ? 'text-gray-900' : 'text-gray-900'}`}>
                 {tx.type === 'BUY' ? '+' : '-'}${tx.amountUSD.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 mb-1">
                 @ {tx.exchangeRate} BDT
               </p>
+              
+              {/* Profit Display for Sell Transactions */}
+              {tx.type === 'SELL' && profits[tx.id] !== undefined && (
+                <div className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-block ${
+                  profits[tx.id] >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  {profits[tx.id] >= 0 ? 'Profit: +' : 'Loss: '}{Math.abs(profits[tx.id]).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ৳
+                </div>
+              )}
             </div>
             
             <button 
