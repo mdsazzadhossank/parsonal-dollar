@@ -1,4 +1,4 @@
-export type TransactionType = 'BUY' | 'SELL';
+export type TransactionType = 'BUY' | 'SELL' | 'PERSONAL';
 
 export interface Transaction {
   id: string;

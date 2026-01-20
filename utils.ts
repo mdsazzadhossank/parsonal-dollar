@@ -15,16 +15,16 @@ export const calculatePortfolioAnalytics = (transactions: Transaction[]) => {
       inventory += tx.amountUSD;
       // Add cost (including fees) to cost basis
       totalCostBasis += tx.totalBDT;
-    } else if (tx.type === 'SELL') {
+    } else if (tx.type === 'SELL' || tx.type === 'PERSONAL') {
       let txProfit = 0;
       if (inventory > 0) {
         // Calculate the average cost per unit at the moment of sale
         const avgCostPerUnit = totalCostBasis / inventory;
         
-        // Cost of the goods being sold
+        // Cost of the goods being sold/used
         const costOfSoldGoods = avgCostPerUnit * tx.amountUSD;
 
-        // Revenue from sale (Net received)
+        // Revenue from sale OR Value consumed (Net amount)
         const revenue = tx.totalBDT; 
 
         // Profit = Revenue - Cost of Goods Sold

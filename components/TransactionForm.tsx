@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Minus, DollarSign } from 'lucide-react';
+import { Plus, Minus, DollarSign, ShoppingBag } from 'lucide-react';
 import { Transaction, TransactionType } from '../types';
 
 interface TransactionFormProps {
@@ -24,7 +24,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransacti
       // Cost = (Amount * Rate) + Fees
       setCalculatedTotal((amount * r) + f);
     } else {
-      // Receive = (Amount * Rate) - Fees
+      // For SELL or PERSONAL: Net Value = (Amount * Rate) - Fees
+      // For Personal use, this represents the Market Value consumed minus any transaction costs
       setCalculatedTotal((amount * r) - f);
     }
   }, [amountUSD, rate, fees, type]);
@@ -37,8 +38,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransacti
 
     if (!amount || !r) return;
 
-    if (type === 'SELL' && amount > currentInventory) {
-      alert(`Cannot sell $${amount}. You only have $${currentInventory} in inventory.`);
+    if ((type === 'SELL' || type === 'PERSONAL') && amount > currentInventory) {
+      alert(`Cannot ${type === 'PERSONAL' ? 'use' : 'sell'} $${amount}. You only have $${currentInventory} in inventory.`);
       return;
     }
 
@@ -53,8 +54,15 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransacti
     // Reset
     setAmountUSD('');
     setFees('');
-    // We usually keep rate as it changes less frequently, but let's clear for clean slate
-    // setRate(''); 
+    // We usually keep rate as it changes less frequently
+  };
+
+  const getSubmitLabel = () => {
+      switch(type) {
+          case 'BUY': return 'Confirm Purchase';
+          case 'SELL': return 'Confirm Sale';
+          case 'PERSONAL': return 'Confirm Personal Use';
+      }
   };
 
   return (
@@ -69,19 +77,27 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransacti
       <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
         <button
           onClick={() => setType('BUY')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${
             type === 'BUY' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          <Plus size={16} /> Buy USD
+          <Plus size={14} /> Buy
         </button>
         <button
           onClick={() => setType('SELL')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${
             type === 'SELL' ? 'bg-gray-700 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          <Minus size={16} /> Sell USD
+          <Minus size={14} /> Sell
+        </button>
+        <button
+          onClick={() => setType('PERSONAL')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-medium rounded-md transition-all ${
+            type === 'PERSONAL' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <ShoppingBag size={14} /> Personal
         </button>
       </div>
 
@@ -103,7 +119,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransacti
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1.5">Exchange Rate (BDT/USD)</label>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+             {type === 'PERSONAL' ? 'Current Market Rate (BDT/USD)' : 'Exchange Rate (BDT/USD)'}
+          </label>
           <input
             type="number"
             step="0.01"
@@ -129,7 +147,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransacti
 
         <div className="flex justify-between items-center py-2 border-t border-gray-100 mt-2">
           <span className="text-sm text-gray-500">
-            {type === 'BUY' ? 'Total Cost (inc. fees):' : 'Net Receive (less fees):'}
+            {type === 'BUY' ? 'Total Cost:' : type === 'SELL' ? 'Net Receive:' : 'Value Consumed:'}
           </span>
           <span className="text-lg font-bold text-gray-900">
             {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'BDT' }).format(calculatedTotal)}
@@ -139,10 +157,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onAddTransacti
         <button
           type="submit"
           className={`w-full py-3 rounded-lg text-white font-semibold shadow-lg transition-transform active:scale-[0.98] ${
-            type === 'BUY' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-200' : 'bg-gray-800 hover:bg-gray-900 shadow-gray-200'
+            type === 'BUY' 
+                ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-200' 
+                : type === 'SELL'
+                    ? 'bg-gray-800 hover:bg-gray-900 shadow-gray-200'
+                    : 'bg-purple-600 hover:bg-purple-700 shadow-purple-200'
           }`}
         >
-          {type === 'BUY' ? 'Confirm Purchase' : 'Confirm Sale'}
+          {getSubmitLabel()}
         </button>
       </form>
     </div>
