@@ -32,13 +32,17 @@ const App: React.FC = () => {
     try {
       setIsError(false);
       const res = await fetch(`${API_BASE_URL}/api.php?action=get_transactions`);
-      if (!res.ok) throw new Error("API Error");
+      if (!res.ok) throw new Error("Server error");
       const data = await res.json();
+      
+      if (data.status === 'error') {
+        throw new Error(data.message);
+      }
+      
       setTransactions(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
       setIsError(true);
-      // Fallback: Empty or retry logic could go here
     } finally {
       setIsLoading(false);
     }
@@ -63,32 +67,51 @@ const App: React.FC = () => {
 
     // Send to DB
     try {
-      await fetch(`${API_BASE_URL}/api.php?action=save_transaction`, {
+      const res = await fetch(`${API_BASE_URL}/api.php?action=save_transaction`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTx)
       });
-    } catch (error) {
+      
+      const data = await res.json();
+      
+      if (data.status === 'error') {
+        throw new Error(data.message);
+      }
+    } catch (error: any) {
       console.error("Failed to save transaction", error);
-      alert("ডাটাবেজে সেভ করতে সমস্যা হয়েছে!");
+      alert(`ডাটাবেজে সেভ হয়নি! এরর: ${error.message || "Network Error"}`);
+      // Rollback
+      setTransactions(prev => prev.filter(tx => tx.id !== newTx.id));
     }
   };
 
   const handleDeleteTransaction = async (id: string) => {
     if (confirm('Are you sure you want to delete this transaction? It will recalculate all history.')) {
+      const txToDelete = transactions.find(t => t.id === id);
+      
       // Optimistic Update
       setTransactions(prev => prev.filter(tx => tx.id !== id));
 
       // Delete from DB
       try {
-        await fetch(`${API_BASE_URL}/api.php?action=delete_transaction`, {
+        const res = await fetch(`${API_BASE_URL}/api.php?action=delete_transaction`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id })
         });
-      } catch (error) {
+        const data = await res.json();
+        
+        if (data.status === 'error') {
+          throw new Error(data.message);
+        }
+      } catch (error: any) {
         console.error("Failed to delete transaction", error);
-        alert("ডাটাবেজ থেকে মুছতে সমস্যা হয়েছে!");
+        alert(`ডাটাবেজ থেকে মোছা যায়নি! এরর: ${error.message}`);
+        // Rollback (Restore the deleted item)
+        if (txToDelete) {
+           setTransactions(prev => [...prev, txToDelete]);
+        }
       }
     }
   };
@@ -130,7 +153,7 @@ const App: React.FC = () => {
         {isError && (
           <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 flex items-center gap-2 border border-red-100">
              <WifiOff size={20} />
-             <p>ডাটাবেজ কানেকশনে সমস্যা হয়েছে। অনুগ্রহ করে আপনার ইন্টারনেট সংযোগ বা সার্ভার কনফিগারেশন চেক করুন।</p>
+             <p>ডাটাবেজ কানেকশনে সমস্যা হয়েছে। URL ঠিক আছে কিনা এবং Xampp/Server চালু আছে কিনা চেক করুন।</p>
           </div>
         )}
 

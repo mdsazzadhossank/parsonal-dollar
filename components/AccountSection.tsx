@@ -34,7 +34,9 @@ export const AccountSection: React.FC = () => {
       const res = await fetch(`${API_BASE_URL}/api.php?action=get_accounts`);
       if(res.ok) {
         const data = await res.json();
-        setAccounts(Array.isArray(data) ? data : []);
+        if (Array.isArray(data)) {
+           setAccounts(data);
+        }
       }
     } catch (e) {
       console.error("Fetch accounts error", e);
@@ -63,8 +65,10 @@ export const AccountSection: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newAccount)
       });
+      
+      const data = await res.json();
 
-      if (res.ok) {
+      if (res.ok && data.status === 'success') {
         setAccounts([...accounts, newAccount]);
         // Reset form
         setUsername('');
@@ -74,11 +78,11 @@ export const AccountSection: React.FC = () => {
         setMessage('অ্যাকাউন্ট সফলভাবে ডাটাবেজে যুক্ত করা হয়েছে!');
         setTimeout(() => setMessage(''), 3000);
       } else {
-        setMessage('Failed to save to database.');
+        setMessage(`Error: ${data.message || 'Failed to save'}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setMessage('Network error.');
+      setMessage(`Network error: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -87,19 +91,29 @@ export const AccountSection: React.FC = () => {
   const handleDelete = async (id: string) => {
       if(!confirm('আপনি কি নিশ্চিত যে আপনি এই অ্যাকাউন্টের তথ্য মুছে ফেলতে চান?')) return;
       
+      const accToDelete = accounts.find(a => a.id === id);
+      
       // Optimistic update
       const updatedList = accounts.filter(acc => acc.id !== id);
       setAccounts(updatedList);
 
       try {
-        await fetch(`${API_BASE_URL}/api.php?action=delete_account`, {
+        const res = await fetch(`${API_BASE_URL}/api.php?action=delete_account`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id })
         });
-      } catch (err) {
+        const data = await res.json();
+        
+        if (data.status === 'error') {
+            throw new Error(data.message);
+        }
+
+      } catch (err: any) {
         console.error("Delete failed", err);
-        alert("ডাটাবেজ থেকে মুছতে সমস্যা হয়েছে, পেজটি রিফ্রেশ করুন।");
+        alert(`ডাটাবেজ থেকে মোছা যায়নি! ${err.message}`);
+        // Rollback
+        if (accToDelete) setAccounts(prev => [...prev, accToDelete]);
       }
   };
 
@@ -185,7 +199,7 @@ export const AccountSection: React.FC = () => {
                         {isLoading ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
                         Add Account Info
                     </button>
-                    {message && <p className="text-center text-xs text-green-600 mt-2 font-medium">{message}</p>}
+                    {message && <p className={`text-center text-xs mt-2 font-medium ${message.includes('Error') || message.includes('failed') ? 'text-red-600' : 'text-green-600'}`}>{message}</p>}
                 </div>
             </form>
         </div>
